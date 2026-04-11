@@ -57,6 +57,17 @@ const sliderOptions: SliderOptions<WorkbenchViewType> = {
   },
 };
 
+const mobileSliderOptions: SliderOptions<WorkbenchViewType> = {
+  left: {
+    value: 'terminal',
+    text: 'Terminal',
+  },
+  right: {
+    value: 'preview',
+    text: 'Preview',
+  },
+};
+
 const workbenchVariants = {
   closed: {
     width: 0,
@@ -305,6 +316,7 @@ export const Workbench = memo(
     const canHideChat = showWorkbench || !showChat;
 
     const isSmallViewport = useViewport(1024);
+    const isMobileViewport = useViewport(640);
     const streaming = useStore(streamingState);
     const { exportChat } = useChatHistory();
     const [isSyncing, setIsSyncing] = useState(false);
@@ -318,6 +330,13 @@ export const Workbench = memo(
         setSelectedView('preview');
       }
     }, [hasPreview]);
+
+    useEffect(() => {
+      if (isMobileViewport) {
+        workbenchStore.showWorkbench.set(true);
+        setSelectedView('terminal');
+      }
+    }, [isMobileViewport]);
 
     useEffect(() => {
       workbenchStore.setDocuments(files);
@@ -396,14 +415,30 @@ export const Workbench = memo(
                 <div className="flex items-center px-3 py-2 border-b border-bolt-elements-borderColor gap-1.5">
                   <button
                     className={`${showChat ? 'i-ph:sidebar-simple-fill' : 'i-ph:sidebar-simple'} text-lg text-bolt-elements-textSecondary mr-1`}
-                    disabled={!canHideChat || isSmallViewport}
+                    disabled={!canHideChat || (isSmallViewport && !isMobileViewport)}
                     onClick={() => {
                       if (canHideChat) {
                         chatStore.setKey('showChat', !showChat);
                       }
                     }}
                   />
-                  <Slider selected={selectedView} options={sliderOptions} setSelected={setSelectedView} />
+                  {isMobileViewport && (
+                    <button
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors"
+                      onClick={() => {
+                        chatStore.setKey('showChat', true);
+                        workbenchStore.showWorkbench.set(false);
+                      }}
+                    >
+                      <div className="i-ph:chat-circle-dots text-lg" />
+                      <span className="text-xs font-medium">Show Chat</span>
+                    </button>
+                  )}
+                  <Slider
+                    selected={selectedView}
+                    options={isMobileViewport ? mobileSliderOptions : sliderOptions}
+                    setSelected={setSelectedView}
+                  />
                   <div className="ml-auto" />
                   {selectedView === 'code' && (
                     <div className="flex overflow-y-auto">
@@ -480,8 +515,12 @@ export const Workbench = memo(
                   />
                 </div>
                 <div className="relative flex-1 overflow-hidden">
-                  <View initial={{ x: '0%' }} animate={{ x: selectedView === 'code' ? '0%' : '-100%' }}>
+                  <View
+                    initial={{ x: '0%' }}
+                    animate={{ x: selectedView === 'code' || selectedView === 'terminal' ? '0%' : '-100%' }}
+                  >
                     <EditorPanel
+                      terminalOnly={isMobileViewport && selectedView === 'terminal'}
                       editorDocument={currentDocument}
                       isStreaming={isStreaming}
                       selectedFile={selectedFile}
