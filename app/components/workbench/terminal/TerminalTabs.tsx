@@ -15,7 +15,11 @@ const logger = createScopedLogger('Terminal');
 const MAX_TERMINALS = 3;
 export const DEFAULT_TERMINAL_SIZE = 25;
 
-export const TerminalTabs = memo(() => {
+interface TerminalTabsProps {
+  terminalOnly?: boolean;
+}
+
+export const TerminalTabs = memo(({ terminalOnly }: TerminalTabsProps) => {
   const showTerminal = useStore(workbenchStore.showTerminal);
   const theme = useStore(themeStore);
 
@@ -116,9 +120,9 @@ export const TerminalTabs = memo(() => {
   return (
     <Panel
       ref={terminalPanelRef}
-      defaultSize={showTerminal ? DEFAULT_TERMINAL_SIZE : 0}
+      defaultSize={terminalOnly ? 100 : showTerminal ? DEFAULT_TERMINAL_SIZE : 0}
       minSize={10}
-      collapsible
+      collapsible={!terminalOnly}
       onExpand={() => {
         if (!terminalToggledByShortcut.current) {
           workbenchStore.toggleTerminal(true);
@@ -207,13 +211,15 @@ export const TerminalTabs = memo(() => {
                 }
               }}
             />
-            <IconButton
-              className="ml-auto"
-              icon="i-ph:caret-down"
-              title="Close"
-              size="md"
-              onClick={() => workbenchStore.toggleTerminal(false)}
-            />
+            {!terminalOnly && (
+              <IconButton
+                className="ml-auto"
+                icon="i-ph:caret-down"
+                title="Close"
+                size="md"
+                onClick={() => workbenchStore.toggleTerminal(false)}
+              />
+            )}
           </div>
           {Array.from({ length: terminalCount + 1 }, (_, index) => {
             const isActive = activeTerminal === index;

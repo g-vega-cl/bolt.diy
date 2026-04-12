@@ -27,6 +27,7 @@ import { classNames } from '~/utils/classNames'; // <-- Import classNames if not
 import { LockManager } from './LockManager'; // <-- Import LockManager
 
 interface EditorPanelProps {
+  terminalOnly?: boolean;
   files?: FileMap;
   unsavedFiles?: Set<string>;
   editorDocument?: EditorDocument;
@@ -46,6 +47,7 @@ const editorSettings: EditorSettings = { tabSize: 2 };
 
 export const EditorPanel = memo(
   ({
+    terminalOnly,
     files,
     unsavedFiles,
     editorDocument,
@@ -82,7 +84,11 @@ export const EditorPanel = memo(
 
     return (
       <PanelGroup direction="vertical">
-        <Panel defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100} minSize={20}>
+        <Panel
+          defaultSize={showTerminal ? DEFAULT_EDITOR_SIZE : 100}
+          minSize={20}
+          className={classNames({ hidden: terminalOnly })}
+        >
           <PanelGroup direction="horizontal">
             <Panel defaultSize={20} minSize={15} collapsible className="border-r border-bolt-elements-borderColor">
               <div className="h-full">
@@ -178,8 +184,8 @@ export const EditorPanel = memo(
             </Panel>
           </PanelGroup>
         </Panel>
-        <PanelResizeHandle />
-        <TerminalTabs />
+        <PanelResizeHandle className={classNames({ hidden: terminalOnly })} />
+        <TerminalTabs terminalOnly={terminalOnly} />
       </PanelGroup>
     );
   },

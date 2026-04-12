@@ -3,8 +3,9 @@ import { classNames } from '~/utils/classNames';
 import { type ChatHistoryItem } from '~/lib/persistence';
 import WithTooltip from '~/components/ui/Tooltip';
 import { useEditChatDescription } from '~/lib/hooks';
-import { forwardRef, type ForwardedRef, useCallback } from 'react';
+import { forwardRef, type ForwardedRef, useCallback, useEffect, useState } from 'react';
 import { Checkbox } from '~/components/ui/Checkbox';
+import useViewport from '~/lib/hooks/useViewport';
 
 interface HistoryItemProps {
   item: ChatHistoryItem;
@@ -27,6 +28,8 @@ export function HistoryItem({
 }: HistoryItemProps) {
   const { id: urlId } = useParams();
   const isActiveChat = urlId === item.urlId;
+  const isMobile = useViewport(768);
+  const [showActions, setShowActions] = useState(false);
 
   const { editing, handleChange, handleBlur, handleSubmit, handleKeyDown, currentDescription, toggleEditMode } =
     useEditChatDescription({
@@ -35,6 +38,11 @@ export function HistoryItem({
       syncWithGlobalStore: isActiveChat,
     });
 
+  const handleCheckboxChange = useCallback(() => {
+    console.log('Checkbox changed for item:', item.id);
+    onToggleSelection?.(item.id);
+  }, [item.id, onToggleSelection]);
+
   const handleItemClick = useCallback(
     (e: React.MouseEvent) => {
       if (selectionMode) {
@@ -42,15 +50,27 @@ export function HistoryItem({
         e.stopPropagation();
         console.log('Item clicked in selection mode:', item.id);
         onToggleSelection?.(item.id);
+      } else if (isMobile) {
+        // On mobile, toggle action buttons visibility
+        e.preventDefault();
+        e.stopPropagation();
+        setShowActions(prev => !prev);
       }
     },
-    [selectionMode, item.id, onToggleSelection],
+    [selectionMode, item.id, onToggleSelection, isMobile],
   );
 
-  const handleCheckboxChange = useCallback(() => {
-    console.log('Checkbox changed for item:', item.id);
-    onToggleSelection?.(item.id);
-  }, [item.id, onToggleSelection]);
+  // Close action buttons when clicking outside on mobile
+  useEffect(() => {
+    if (!isMobile || !showActions) return;
+
+    const handleClickOutside = () => {
+      setShowActions(false);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isMobile, showActions]);
 
   const handleDeleteClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -70,9 +90,9 @@ export function HistoryItem({
       className={classNames(
         'group rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50/80 dark:hover:bg-gray-800/30 overflow-hidden flex justify-between items-center px-3 py-2 transition-colors',
         { 'text-gray-900 dark:text-white bg-gray-50/80 dark:bg-gray-800/30': isActiveChat },
-        { 'cursor-pointer': selectionMode },
+        { 'cursor-pointer': selectionMode || isMobile },
       )}
-      onClick={selectionMode ? handleItemClick : undefined}
+      onClick={handleItemClick}
     >
       {selectionMode && (
         <div className="flex items-center mr-2" onClick={(e) => e.stopPropagation()}>
@@ -113,10 +133,12 @@ export function HistoryItem({
           </WithTooltip>
           <div
             className={classNames(
-              'absolute right-0 top-0 bottom-0 flex items-center bg-transparent px-2 transition-colors',
+              'absolute right-0 top-0 bottom-0 flex items-center bg-transparent px-2',
+              // On mobile, show when tapped. On desktop, show on hover
+              isMobile ? (showActions ? 'opacity-100' : 'opacity-0') : 'opacity-0 group-hover:opacity-100 transition-opacity',
             )}
           >
-            <div className="flex items-center gap-2.5 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-0.5">
               <ChatActionButton
                 toolTipContent="Export"
                 icon="i-ph:download-simple h-4 w-4"
@@ -178,7 +200,11 @@ const ChatActionButton = forwardRef(
         <button
           ref={ref}
           type="button"
-          className={`text-gray-400 dark:text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors ${icon} ${className ? className : ''}`}
+          className={classNames(
+            'text-gray-400 dark:text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 min-w-[36px] min-h-[36px] flex items-center justify-center',
+            icon,
+            className
+          )}
           onClick={onClick}
         />
       </WithTooltip>

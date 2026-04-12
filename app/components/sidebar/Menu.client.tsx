@@ -14,6 +14,7 @@ import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import useViewport from '~/lib/hooks/useViewport';
 
 const menuVariants = {
   closed: {
@@ -29,6 +30,25 @@ const menuVariants = {
     opacity: 1,
     visibility: 'initial',
     left: 0,
+    transition: {
+      duration: 0.2,
+      ease: cubicEasingFn,
+    },
+  },
+} satisfies Variants;
+
+const backdropVariants = {
+  closed: {
+    opacity: 0,
+    visibility: 'hidden',
+    transition: {
+      duration: 0.2,
+      ease: cubicEasingFn,
+    },
+  },
+  open: {
+    opacity: 1,
+    visibility: 'initial',
     transition: {
       duration: 0.2,
       ease: cubicEasingFn,
@@ -73,6 +93,7 @@ export const Menu = () => {
   const profile = useStore(profileStore);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const isMobile = useViewport(768);
 
   const { filteredItems: filteredList, handleSearchChange } = useSearchFilter({
     items: list,
@@ -278,7 +299,13 @@ export const Menu = () => {
     }
   }, [open, selectionMode]);
 
+  // Mouse hover detection for desktop only
   useEffect(() => {
+    // Don't enable hover detection on mobile
+    if (isMobile) {
+      return;
+    }
+
     const enterThreshold = 20;
     const exitThreshold = 20;
 
@@ -301,7 +328,7 @@ export const Menu = () => {
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
     };
-  }, [isSettingsOpen]);
+  }, [isSettingsOpen, isMobile]);
 
   const handleDuplicate = async (id: string) => {
     await duplicateCurrentChat(id);
@@ -317,6 +344,16 @@ export const Menu = () => {
     setIsSettingsOpen(false);
   };
 
+  // Expose toggle function for mobile header button
+  useEffect(() => {
+    (window as any).__toggleSidebar = () => {
+      setOpen(prev => !prev);
+    };
+    return () => {
+      delete (window as any).__toggleSidebar;
+    };
+  }, []);
+
   const setDialogContentWithLogging = useCallback((content: DialogContent) => {
     console.log('Setting dialog content:', content);
     setDialogContent(content);
@@ -324,21 +361,39 @@ export const Menu = () => {
 
   return (
     <>
+      {/* Mobile backdrop overlay */}
+      <motion.div
+        initial="closed"
+        animate={open && isMobile ? 'open' : 'closed'}
+        variants={backdropVariants}
+        className="fixed inset-0 bg-black/50 z-[996] lg:hidden"
+        onClick={() => setOpen(false)}
+      />
+      
       <motion.div
         ref={menuRef}
         initial="closed"
         animate={open ? 'open' : 'closed'}
         variants={menuVariants}
-        style={{ width: '340px' }}
+        style={{ width: isMobile ? 'min(340px, 85vw)' : '340px' }}
         className={classNames(
           'flex selection-accent flex-col side-menu fixed top-0 h-full rounded-r-2xl',
           'bg-white dark:bg-gray-950 border-r border-bolt-elements-borderColor',
           'shadow-sm text-sm',
-          isSettingsOpen ? 'z-40' : 'z-sidebar',
+          isMobile ? 'z-[998]' : (isSettingsOpen ? 'z-40' : 'z-sidebar'),
         )}
       >
         <div className="h-12 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-tr-2xl">
-          <div className="text-gray-900 dark:text-white font-medium"></div>
+          <div className="text-gray-900 dark:text-white font-medium">
+            {/* Close button for mobile */}
+            <button
+              onClick={() => setOpen(false)}
+              className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Close sidebar"
+            >
+              <span className="i-ph:x h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
           <div className="flex items-center gap-3">
             <HelpButton onClick={() => window.open('https://stackblitz-labs.github.io/bolt.diy/', '_blank')} />
             <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
