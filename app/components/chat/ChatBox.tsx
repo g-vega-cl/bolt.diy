@@ -20,6 +20,7 @@ import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import { McpTools } from './MCPTools';
 import { WebSearch } from './WebSearch.client';
+import useViewport from '~/lib/hooks/useViewport';
 
 interface ChatBoxProps {
   isModelSettingsCollapsed: boolean;
@@ -66,6 +67,9 @@ interface ChatBoxProps {
 }
 
 export const ChatBox: React.FC<ChatBoxProps> = (props) => {
+  const isMobile = useViewport(768);
+  const [showMobileModelSelector, setShowMobileModelSelector] = React.useState(false);
+
   return (
     <div
       className={classNames(
@@ -108,32 +112,57 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
         <ClientOnly>
           {() => (
             <div className={props.isModelSettingsCollapsed ? 'hidden' : ''}>
-              <ModelSelector
-                key={props.provider?.name + ':' + props.modelList.length}
-                model={props.model}
-                setModel={props.setModel}
-                modelList={props.modelList}
-                provider={props.provider}
-                setProvider={props.setProvider}
-                providerList={props.providerList || (PROVIDER_LIST as ProviderInfo[])}
-                apiKeys={props.apiKeys}
-                modelLoading={props.isModelLoading}
-              />
-              {(props.providerList || []).length > 0 &&
-                props.provider &&
-                !LOCAL_PROVIDERS.includes(props.provider.name) && (
-                  <APIKeyManager
-                    provider={props.provider}
-                    apiKey={props.apiKeys[props.provider.name] || ''}
-                    setApiKey={(key) => {
-                      props.onApiKeysChange(props.provider.name, key);
-                    }}
-                  />
-                )}
+              {/* On mobile, only show if user has explicitly opened it */}
+              <div className={isMobile && !showMobileModelSelector ? 'hidden' : ''}>
+                <ModelSelector
+                  key={props.provider?.name + ':' + props.modelList.length}
+                  model={props.model}
+                  setModel={props.setModel}
+                  modelList={props.modelList}
+                  provider={props.provider}
+                  setProvider={props.setProvider}
+                  providerList={props.providerList || (PROVIDER_LIST as ProviderInfo[])}
+                  apiKeys={props.apiKeys}
+                  modelLoading={props.isModelLoading}
+                />
+                {(props.providerList || []).length > 0 &&
+                  props.provider &&
+                  !LOCAL_PROVIDERS.includes(props.provider.name) && (
+                    <APIKeyManager
+                      provider={props.provider}
+                      apiKey={props.apiKeys[props.provider.name] || ''}
+                      setApiKey={(key) => {
+                        props.onApiKeysChange(props.provider.name, key);
+                      }}
+                    />
+                  )}
+              </div>
             </div>
           )}
         </ClientOnly>
       </div>
+      
+      {/* Mobile button to show model selector */}
+      {isMobile && !showMobileModelSelector && !props.isModelSettingsCollapsed && (
+        <button
+          onClick={() => setShowMobileModelSelector(true)}
+          className="w-full py-2.5 px-3 mb-2 text-sm font-medium rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-3 transition-colors flex items-center justify-center gap-2"
+        >
+          <span className="i-ph:sliders-horizontal text-lg" />
+          <span>Model Settings</span>
+        </button>
+      )}
+      
+      {/* Close button when model selector is shown on mobile */}
+      {isMobile && showMobileModelSelector && (
+        <button
+          onClick={() => setShowMobileModelSelector(false)}
+          className="w-full py-2 px-3 mb-2 text-xs font-medium rounded-lg bg-bolt-elements-background-depth-1 border border-bolt-elements-borderColor text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-3 transition-colors flex items-center justify-center gap-2"
+        >
+          <span className="i-ph:caret-up text-base" />
+          <span>Hide Model Settings</span>
+        </button>
+      )}
       <FilePreview
         files={props.uploadedFiles}
         imageDataList={props.imageDataList}

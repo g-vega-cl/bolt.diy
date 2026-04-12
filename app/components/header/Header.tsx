@@ -5,6 +5,12 @@ import { classNames } from '~/utils/classNames';
 import { HeaderActionButtons } from './HeaderActionButtons.client';
 import { ChatDescription } from '~/lib/persistence/ChatDescription.client';
 
+declare global {
+  interface Window {
+    __toggleSidebar?: () => void;
+  }
+}
+
 export function Header() {
   const chat = useStore(chatStore);
 
@@ -15,13 +21,18 @@ export function Header() {
         'border-bolt-elements-borderColor': chat.started,
       })}
     >
-      <div className="flex items-center gap-2 z-logo text-bolt-elements-textPrimary cursor-pointer">
-        <div className="i-ph:sidebar-simple-duotone text-xl" />
-        <a href="/" className="text-2xl font-semibold text-accent flex items-center">
-          {/* <span className="i-bolt:logo-text?mask w-[46px] inline-block" /> */}
-          <img src="/logo-light-styled.png" alt="logo" className="w-[90px] inline-block dark:hidden" />
-          <img src="/logo-dark-styled.png" alt="logo" className="w-[90px] inline-block hidden dark:block" />
-        </a>
+      <div className="flex items-center gap-3 z-logo text-bolt-elements-textPrimary">
+        <button
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.__toggleSidebar) {
+              window.__toggleSidebar();
+            }
+          }}
+          className="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+          aria-label="Toggle sidebar"
+        >
+          <div className="i-ph:sidebar-simple-duotone text-2xl" />
+        </button>
       </div>
       {chat.started && ( // Display ChatDescription and HeaderActionButtons only when the chat has started.
         <>
