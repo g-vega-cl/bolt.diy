@@ -33,6 +33,7 @@ import { ChatBox } from './ChatBox';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
+import useViewport from '~/lib/hooks';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -138,7 +139,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const TEXTAREA_MAX_HEIGHT = chatStarted ? 400 : 200;
     const [apiKeys, setApiKeys] = useState<Record<string, string>>(getApiKeysFromCookies());
     const [modelList, setModelList] = useState<ModelInfo[]>([]);
-    const [isModelSettingsCollapsed, setIsModelSettingsCollapsed] = useState(false);
+    const [isModelSettingsCollapsed, setIsModelSettingsCollapsed] = useState(true);
     const [isListening, setIsListening] = useState(false);
     const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
     const [transcript, setTranscript] = useState('');
@@ -146,6 +147,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
     const expoUrl = useStore(expoUrlAtom);
     const [qrModalOpen, setQrModalOpen] = useState(false);
+    const isSmallViewport = useViewport(1024);
 
     useEffect(() => {
       if (expoUrl) {
@@ -351,11 +353,27 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         <div className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
-              <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
-                <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
+              <div
+                id="intro"
+                className={classNames('mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0', {
+                  'mt-[10vh]': isSmallViewport,
+                })}
+              >
+                <h1
+                  className={classNames('text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in', {
+                    'text-4xl': isSmallViewport,
+                  })}
+                >
                   Where ideas begin
                 </h1>
-                <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
+                <p
+                  className={classNames(
+                    'text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200',
+                    {
+                      'text-lg mb-4': isSmallViewport,
+                    },
+                  )}
+                >
                   Bring ideas to life in seconds or get help on existing projects.
                 </p>
               </div>
@@ -480,6 +498,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               )}
               <div className="flex flex-col gap-5">
                 {!chatStarted &&
+                  !isSmallViewport &&
                   ExamplePrompts((event, messageInput) => {
                     if (isStreaming) {
                       handleStop?.();
@@ -488,7 +507,7 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
 
                     handleSendMessage?.(event, messageInput);
                   })}
-                {!chatStarted && <StarterTemplates />}
+                {!chatStarted && !isSmallViewport && <StarterTemplates />}
               </div>
             </div>
           </div>

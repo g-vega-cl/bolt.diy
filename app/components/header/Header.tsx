@@ -34,20 +34,13 @@ export function Header() {
           <div className="i-ph:sidebar-simple-duotone text-2xl" />
         </button>
       </div>
-      {chat.started && ( // Display ChatDescription and HeaderActionButtons only when the chat has started.
-        <>
-          <span className="flex-1 px-4 truncate text-center text-bolt-elements-textPrimary">
-            <ClientOnly>{() => <ChatDescription />}</ClientOnly>
-          </span>
-          <ClientOnly>
-            {() => (
-              <div className="">
-                <HeaderActionButtons chatStarted={chat.started} />
-              </div>
-            )}
-          </ClientOnly>
-        </>
+      {chat.started && (
+        <span className="flex-1 px-4 truncate text-center text-bolt-elements-textPrimary">
+          <ClientOnly>{() => <ChatDescription />}</ClientOnly>
+        </span>
       )}
+      <div className="flex-1" />
+      <ClientOnly>{() => <HeaderActionButtons chatStarted={chat.started} />}</ClientOnly>
     </header>
   );
 }

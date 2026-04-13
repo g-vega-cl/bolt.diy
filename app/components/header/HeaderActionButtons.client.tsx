@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { DeployButton } from '~/components/deploy/DeployButton';
+import useViewport from '~/lib/hooks';
 
 interface HeaderActionButtonsProps {
   chatStarted: boolean;
 }
 
 export function HeaderActionButtons({ chatStarted: _chatStarted }: HeaderActionButtonsProps) {
+  const isSmallViewport = useViewport(1024);
+  const showWorkbench = useStore(workbenchStore.showWorkbench);
   const [activePreviewIndex] = useState(0);
   const previews = useStore(workbenchStore.previews);
   const activePreview = previews[activePreviewIndex];
@@ -16,6 +19,17 @@ export function HeaderActionButtons({ chatStarted: _chatStarted }: HeaderActionB
 
   return (
     <div className="flex items-center gap-1">
+      {/* Workbench Toggle for Mobile */}
+      {isSmallViewport && (
+        <button
+          onClick={() => workbenchStore.showWorkbench.set(!showWorkbench)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-bolt-elements-background-depth-2 hover:bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors border border-bolt-elements-borderColor text-xs font-medium"
+        >
+          <div className={showWorkbench ? 'i-ph:code-block-fill' : 'i-ph:code-block'} />
+          <span>{showWorkbench ? 'Hide Code' : 'Show Code'}</span>
+        </button>
+      )}
+
       {/* Deploy Button */}
       {shouldShowButtons && <DeployButton />}
 

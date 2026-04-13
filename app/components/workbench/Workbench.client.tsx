@@ -333,7 +333,6 @@ export const Workbench = memo(
 
     useEffect(() => {
       if (isMobileViewport) {
-        workbenchStore.showWorkbench.set(true);
         setSelectedView('terminal');
       }
     }, [isMobileViewport]);

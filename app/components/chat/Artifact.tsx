@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { computed } from 'nanostores';
+import useViewport from '~/lib/hooks';
 import { memo, useEffect, useRef, useState } from 'react';
 import { createHighlighter, type BundledLanguage, type BundledTheme, type HighlighterGeneric } from 'shiki';
 import type { ActionState } from '~/lib/runtime/action-runner';
@@ -29,6 +30,7 @@ interface ArtifactProps {
 export const Artifact = memo(({ artifactId }: ArtifactProps) => {
   const userToggledActions = useRef(false);
   const [showActions, setShowActions] = useState(false);
+  const isSmallViewport = useViewport(1024);
   const [allActionFinished, setAllActionFinished] = useState(false);
 
   const artifacts = useStore(workbenchStore.artifacts);
@@ -94,7 +96,7 @@ export const Artifact = memo(({ artifactId }: ArtifactProps) => {
                 {dynamicTitle}
               </div>
               <div className="w-full w-full text-bolt-elements-textSecondary text-xs mt-0.5">
-                Click to open Workbench
+                {isSmallViewport ? 'Click to show code' : 'Click to open Workbench'}
               </div>
             </div>
           </button>
@@ -243,16 +245,36 @@ const ActionList = memo(({ actions }: ActionListProps) => {
                 ) : type === 'shell' ? (
                   <div className="flex items-center w-full min-h-[28px]">
                     <span className="flex-1">Run command</span>
+                    <button
+                      onClick={() => {
+                        workbenchStore.showWorkbench.set(true);
+                        workbenchStore.currentView.set('terminal');
+                      }}
+                      className="ml-auto px-2 py-0.5 text-xs rounded bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors border border-bolt-elements-borderColor"
+                    >
+                      View Terminal
+                    </button>
                   </div>
                 ) : type === 'start' ? (
                   <a
                     onClick={(e) => {
                       e.preventDefault();
+                      workbenchStore.showWorkbench.set(true);
                       workbenchStore.currentView.set('preview');
                     }}
                     className="flex items-center w-full min-h-[28px]"
                   >
-                    <span className="flex-1">Start Application</span>
+                    <span className="flex-1 text-accent-500 hover:underline cursor-pointer">Start Application</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        workbenchStore.showWorkbench.set(true);
+                        workbenchStore.currentView.set('terminal');
+                      }}
+                      className="ml-auto px-2 py-0.5 text-xs rounded bg-bolt-elements-background-depth-3 text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary transition-colors border border-bolt-elements-borderColor"
+                    >
+                      View Terminal
+                    </button>
                   </a>
                 ) : null}
               </div>
