@@ -685,7 +685,7 @@ export class WorkbenchStore {
     username?: string,
     token?: string,
     isPrivate: boolean = false,
-    branchName: string = 'main',
+    branchName?: string,
   ) {
     try {
       const isGitHub = provider === 'github';
@@ -707,6 +707,8 @@ export class WorkbenchStore {
       if (isGitHub) {
         // Initialize Octokit with the auth token
         const octokit = new Octokit({ auth: authToken });
+
+        const finalBranchName = branchName || `bolt-changes-${Date.now().toString(36).slice(-6)}`;
 
         // Check if the repository already exists before creating it
         let repo: RestEndpointMethodTypes['repos']['get']['response']['data'];
@@ -813,13 +815,33 @@ export class WorkbenchStore {
             const repoRefresh = await octokit.repos.get({ owner, repo: repoName });
             repo = repoRefresh.data;
 
-            // Get the latest commit SHA (assuming main branch, update dynamically if needed)
+            // Get the default branch
+            const baseBranch = repo.default_branch || 'main';
+
+            // Get the latest commit SHA from the base branch
             const { data: ref } = await octokit.git.getRef({
               owner: repo.owner.login,
               repo: repo.name,
-              ref: `heads/${repo.default_branch || 'main'}`, // Handle dynamic branch
+              ref: `heads/${baseBranch}`,
             });
             const latestCommitSha = ref.object.sha;
+
+            // Create a new branch if it doesn't exist
+            try {
+              await octokit.git.createRef({
+                owner: repo.owner.login,
+                repo: repo.name,
+                ref: `refs/heads/${finalBranchName}`,
+                sha: latestCommitSha,
+              });
+              console.log(`Created new branch: ${finalBranchName}`);
+            } catch (error: any) {
+              if (error.status !== 422) {
+                // 422 means branch already exists
+                throw error;
+              }
+              console.log(`Branch ${finalBranchName} already exists, using it.`);
+            }
 
             // Create a new tree
             const { data: newTree } = await octokit.git.createTree({
@@ -847,7 +869,7 @@ export class WorkbenchStore {
             await octokit.git.updateRef({
               owner: repo.owner.login,
               repo: repo.name,
-              ref: `heads/${repo.default_branch || 'main'}`, // Handle dynamic branch
+              ref: `heads/${finalBranchName}`,
               sha: newCommit.sha,
             });
 

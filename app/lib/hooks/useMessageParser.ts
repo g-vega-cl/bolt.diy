@@ -11,7 +11,12 @@ const messageParser = new EnhancedStreamingMessageParser({
     onArtifactOpen: (data) => {
       logger.trace('onArtifactOpen', data);
 
-      workbenchStore.showWorkbench.set(true);
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
+      if (!isMobile) {
+        workbenchStore.showWorkbench.set(true);
+      }
+
       workbenchStore.addArtifact(data);
     },
     onArtifactClose: (data) => {
